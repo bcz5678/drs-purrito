@@ -16,7 +16,7 @@ dist-ssr
 .nitro
 *.local
 
-# Env files — API keys (e.g. LOVABLE_API_KEY) live here locally and as
+# Env files — API keys (e.g. OPENAI_API_KEY) live here locally and as
 # Coolify environment variables at deploy time, never in git.
 .env
 .env.*

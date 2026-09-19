@@ -9,5 +9,5 @@ services:
       # Set on the host / in Coolify's environment-variables panel — never
       # committed. Locally, docker compose reads a .env file next to this
       # one automatically.
-      LOVABLE_API_KEY: "${LOVABLE_API_KEY}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
     restart: unless-stopped
