@@ -1,0 +1,25 @@
+node_modules
+.git
+.output
+dist
+dist-ssr
+.vinxi
+.nitro
+.turbo
+.cache
+
+# Secrets — never send these to the build context. Coolify injects real
+# values as container env vars at deploy time.
+.env
+.env.*
+!.env.example
+
+*.local
+.vscode
+.idea
+.DS_Store
+npm-debug.log*
+
+# Lovable / editor metadata, not needed to build or run the app
+.lovable
+AGENTS.md

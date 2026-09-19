@@ -1,0 +1,13 @@
+services:
+  purrito:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # Set on the host / in Coolify's environment-variables panel — never
+      # committed. Locally, docker compose reads a .env file next to this
+      # one automatically.
+      LOVABLE_API_KEY: "${LOVABLE_API_KEY}"
+    restart: unless-stopped
