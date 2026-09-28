@@ -4,7 +4,7 @@ import { isAllowedReference } from "@/lib/purritoReference";
 
 // Explicit quality/size keep cost and latency predictable; OpenAI's "auto" default
 // usually picks high quality (~4x the price of medium). Override via env to experiment.
-const MODEL = process.env["OPENAI_IMAGE_MODEL"] ?? "gpt-image-1";
+const MODEL = process.env["OPENAI_IMAGE_MODEL"] ?? "gpt-image-1.5";
 const QUALITY = process.env["OPENAI_IMAGE_QUALITY"] ?? "medium";
 const SIZE = "1024x1024";
 
