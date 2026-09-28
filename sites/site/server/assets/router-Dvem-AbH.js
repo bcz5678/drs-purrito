@@ -3351,7 +3351,7 @@ var Route$1 = createFileRoute("/")({
 });
 //#endregion
 //#region src/routes/api/generate-purrito.ts
-var MODEL = process.env["OPENAI_IMAGE_MODEL"] ?? "gpt-image-1.5";
+var MODEL = process.env["OPENAI_IMAGE_MODEL"] ?? "gpt-image-1";
 var QUALITY = process.env["OPENAI_IMAGE_QUALITY"] ?? "medium";
 var SIZE = "1024x1024";
 var Route = createFileRoute("/api/generate-purrito")({ server: { handlers: { POST: async ({ request }) => {
