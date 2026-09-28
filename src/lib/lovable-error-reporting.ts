@@ -1,58 +1,36 @@
-type LovableErrorOptions = {
-  mechanism?: "manual" | "onerror" | "unhandledrejection" | "react_error_boundary";
-  handled?: boolean;
-  severity?: "error" | "warning" | "info";
-};
-
-type LovableEvents = {
-  captureException?: (
-    error: unknown,
-    context?: Record<string, unknown>,
-    options?: LovableErrorOptions,
-  ) => void;
-};
-
-declare global {
-  interface Window {
-    __lovableEvents?: LovableEvents;
-    __lovableReportRuntimeError?: (payload: {
-      message: string;
-      stack?: string;
-      filename?: string;
-    }) => void;
-  }
-}
-
-export function reportLovableError(error: unknown, context: Record<string, unknown> = {}) {
+/**
+ * Client-side error beacon. Replaces the generator's editor-only reporter.
+ * Keeps the original export name so no call site needs changing.
+ *
+ * Fire-and-forget and never throws: an error inside the error reporter
+ * must not surface to the visitor.
+ */
+export function reportLovableError(
+  error: unknown,
+  context: Record<string, unknown> = {},
+): void {
   if (typeof window === "undefined") return;
-  window.__lovableEvents?.captureException?.(
-    error,
-    {
-      source: "react_error_boundary",
-      route: window.location.pathname,
-      ...context,
-    },
-    {
-      mechanism: "react_error_boundary",
-      handled: false,
-      severity: "error",
-    },
-  );
-  // Prod React does not rethrow boundary-caught errors to window.onerror, so the
-  // editor's telemetry never sees them. Forward to lovable.js's reporting hook,
-  // which is present only inside the editor preview.
-  // Loaders and server fns commonly throw a raw Response; String(it) is the
-  // opaque "[object Response]", so pull out the status and URL instead.
-  const message =
-    error instanceof Response
-      ? `Response ${error.status}${error.url ? ` at ${error.url}` : ""}`
-      : error instanceof Error
-        ? error.message
-        : String(error);
-  const stack = error instanceof Error ? error.stack : undefined;
-  window.__lovableReportRuntimeError?.({
-    message,
-    ...(stack !== undefined && { stack }),
-    filename: window.location.pathname,
+
+  const endpoint = import.meta.env["VITE_ERROR_ENDPOINT"];
+  if (!endpoint) return;
+
+  const body = JSON.stringify({
+    message: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined,
+    host: window.location.host,
+    path: window.location.pathname,
+    ...context,
   });
+
+  try {
+    // sendBeacon survives page unload, which is often exactly when a
+    // render error fires. fetch+keepalive is the fallback.
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(endpoint, new Blob([body], { type: "application/json" }));
+    } else {
+      void fetch(endpoint, { method: "POST", body, keepalive: true });
+    }
+  } catch {
+    /* swallow */
+  }
 }
