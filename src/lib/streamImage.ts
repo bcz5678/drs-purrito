@@ -4,17 +4,24 @@ import { flushSync } from "react-dom";
 type ImageEventPayload =
   | { type: "image_generation.partial_image"; b64_json: string; partial_image_index: number }
   | { type: "image_generation.completed"; b64_json: string }
+  | { type: "image_edit.partial_image"; b64_json: string; partial_image_index: number }
+  | { type: "image_edit.completed"; b64_json: string }
   | { type: "error"; error: { message: string } };
+
+// The generations endpoint emits image_generation.*, the edits endpoint image_edit.*.
+const PARTIAL_EVENTS = new Set(["image_generation.partial_image", "image_edit.partial_image"]);
+const COMPLETED_EVENTS = new Set(["image_generation.completed", "image_edit.completed"]);
 
 export async function streamImage(
   endpoint: string,
   prompt: string,
   onFrame: (dataUrl: string, isFinal: boolean) => void,
+  reference?: string,
 ): Promise<void> {
   const res = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({ prompt, reference }),
   });
   if (!res.ok || !res.body) {
     throw new Error(`Image generation failed: ${res.status} ${await res.text().catch(() => "")}`);
@@ -39,14 +46,11 @@ export async function streamImage(
           "Image generation failed";
         return;
       }
-      if (
-        event.event !== "image_generation.partial_image" &&
-        event.event !== "image_generation.completed"
-      )
+      if (!event.event || (!PARTIAL_EVENTS.has(event.event) && !COMPLETED_EVENTS.has(event.event)))
         return;
       if (!payload) return;
       sawAnyEvent = true;
-      const isFinal = event.event === "image_generation.completed";
+      const isFinal = COMPLETED_EVENTS.has(event.event);
       flushSync(() => {
         onFrame(`data:image/png;base64,${(payload as { b64_json: string }).b64_json}`, isFinal);
       });
@@ -70,7 +74,7 @@ export async function streamImage(
     const replay = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, stream: false }),
+      body: JSON.stringify({ prompt, reference, stream: false }),
     });
     if (!replay.ok) {
       throw new Error(`Image generation failed: ${replay.status}`);

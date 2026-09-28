@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { loadOrder, type StoredOrder } from "@/lib/orderStorage";
 import { streamImage } from "@/lib/streamImage";
 import { findItem, money, TOPPINGS } from "@/lib/menu";
+import { referenceFor } from "@/lib/purritoReference";
 import { CONTRACT_ADDRESS } from "@/lib/site";
 
 function MeatGrinderIcon({ className }: { className?: string }) {
@@ -79,6 +80,7 @@ function OrderPage() {
   const isLoading = data === undefined;
 
   const protein = data?.protein ? findItem(data.protein) : undefined;
+  const reference = referenceFor(data?.protein);
   const toppingList = (data?.toppings ?? [])
     .map((id) => findItem(id))
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
@@ -116,13 +118,14 @@ function OrderPage() {
       "The tortilla must be rolled into a compact, short, wide upright wrap rather than a long horizontal burrito.",
       "Its open top faces the camera, with the front tortilla flap folded across the lower half and lightly toasted brown spots visible.",
       "The bottom third of the wrap is wrapped in crinkled metallic silver foil, with the foil folded neatly up around the tortilla.",
-      "A cute, realistic domestic kitten is nestled inside at the very front and center of the tortilla, about 30 percent larger than before.",
+      `A cute, realistic ${reference.breed} kitten is nestled inside at the very front and center of the tortilla, with the same breed, coat colors, and markings as the kitten in the reference image.`,
       "The kitten must be an ordinary cat with natural fur only — no clothing, collars, bandanas, costumes, accessories, or any human-added adornments.",
       "Show the kitten's head, chest, and two front paws resting naturally over the front rim; the cat must be the clear focal point, prominently sized, and must not be covered by food.",
       fillings
         ? `Arrange these selected ingredients visibly around and just behind the kitten: ${fillings.toLowerCase()}.`
         : "Keep the kitten framed by the open tortilla.",
-      "Match the cheerful attached-reference style: centered symmetrical composition, compact proportions, realistic tortilla and food textures, crisp clean cutout appearance, and soft studio lighting.",
+      "Use the attached reference image as the template: keep its camera angle, centered symmetrical composition, wrap shape, foil, kitten size and pose, realistic tortilla and food textures, and soft studio lighting — only add the fillings described here.",
+      "Place everything on a plain clean white background.",
       "Show exactly one kitten and one foil-wrapped tortilla wrap. No plate, hands, people, text, lettering, logo, watermark, extra limbs, or duplicate animal.",
     ]
       .filter(Boolean)
@@ -136,10 +139,16 @@ function OrderPage() {
     setIsFinal(false);
     setMode(nextMode);
     try {
-      await streamImage("/api/generate-purrito", buildPrompt(nextMode), (dataUrl, final) => {
-        setImageSrc(dataUrl);
-        if (final) setIsFinal(true);
-      });
+      // The breed reference anchors the photo look; the splatter mode is abstract, so it goes without.
+      await streamImage(
+        "/api/generate-purrito",
+        buildPrompt(nextMode),
+        (dataUrl, final) => {
+          setImageSrc(dataUrl);
+          if (final) setIsFinal(true);
+        },
+        nextMode === "photo" ? reference.image : undefined,
+      );
     } catch (streamFailure) {
       const message =
         streamFailure instanceof Error ? streamFailure.message : "Could not create the picture";
