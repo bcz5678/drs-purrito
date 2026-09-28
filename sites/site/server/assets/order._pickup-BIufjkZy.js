@@ -433,8 +433,44 @@ function lazyRouteComponent(importer, exportName) {
 	return lazyComp;
 }
 //#endregion
+//#region src/lib/purritoReference.ts
+var img = (file) => `/site/images/${file}`;
+var DEFAULT_REFERENCE = {
+	image: img("04_American_Shorthair.png"),
+	breed: "American Shorthair"
+};
+var REFERENCES = {
+	"maine-coon-asado": {
+		image: img("01_Maine_Coon.png"),
+		breed: "Maine Coon"
+	},
+	ragdoll: {
+		image: img("02_Ragdoll.png"),
+		breed: "Ragdoll"
+	},
+	"american-shorthair": DEFAULT_REFERENCE,
+	"bengal-barbacoa": {
+		image: img("05_Bengal.png"),
+		breed: "Bengal"
+	},
+	catnitas: {
+		image: img("03_British_Shorthair.png"),
+		breed: "British Shorthair"
+	},
+	siamese: {
+		image: img("06_Siamese.png"),
+		breed: "Siamese"
+	}
+};
+function referenceFor(proteinId) {
+	return proteinId && REFERENCES[proteinId] || DEFAULT_REFERENCE;
+}
+function isAllowedReference(path) {
+	return Object.values(REFERENCES).some((ref) => ref.image === path);
+}
+//#endregion
 //#region src/routes/order.$pickup.tsx
-var $$splitComponentImporter = () => import("./order._pickup-d0zgT8Yb.js");
+var $$splitComponentImporter = () => import("./order._pickup-Bo04FkCb.js");
 var Route = createFileRoute("/order/$pickup")({
 	head: () => ({ meta: [
 		{ title: "Your Purrito Order — Catpotle Mexican Grill" },
@@ -462,4 +498,4 @@ var Route = createFileRoute("/order/$pickup")({
 	component: lazyRouteComponent($$splitComponentImporter, "component")
 });
 //#endregion
-export { createRootRouteWithContext as i, lazyRouteComponent as n, createFileRoute as r, Route as t };
+export { createFileRoute as a, lazyRouteComponent as i, isAllowedReference as n, createRootRouteWithContext as o, referenceFor as r, Route as t };

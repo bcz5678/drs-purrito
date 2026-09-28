@@ -7,22 +7,22 @@ var tsrStartManifest = () => ({ routes: {
 			"/api/generate-purrito",
 			"/order/$pickup"
 		],
-		preloads: ["/assets/index-D68Wp2UH.js"],
+		preloads: ["/assets/index-Dei7FcFX.js"],
 		scripts: [{ attrs: {
 			type: "module",
 			async: !0,
-			src: "/assets/index-D68Wp2UH.js"
+			src: "/assets/index-Dei7FcFX.js"
 		} }]
 	},
 	"/": {
 		filePath: "/home/blc56/projects/sites/PURRITO/src/routes/index.tsx",
 		children: void 0,
-		preloads: ["/assets/routes-2VTiusGE.js", "/assets/menu-Cq5a72CH.js"]
+		preloads: ["/assets/routes-BqAWinwn.js", "/assets/menu-DJjLU7H0.js"]
 	},
 	"/order/$pickup": {
 		filePath: "/home/blc56/projects/sites/PURRITO/src/routes/order.$pickup.tsx",
 		children: void 0,
-		preloads: ["/assets/order._pickup-hE-jNX--.js", "/assets/menu-Cq5a72CH.js"]
+		preloads: ["/assets/order._pickup-DJ8j09hE.js", "/assets/menu-DJjLU7H0.js"]
 	}
 } });
 //#endregion

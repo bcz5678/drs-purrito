@@ -1,6 +1,6 @@
 import { K as require_react, Y as __toESM, s as require_jsx_runtime, t as require_react_dom } from "./react-dom-Dk58sb-z.js";
 import { n as toast, r as Link } from "./dist-Dgzuy_xe.js";
-import { t as Route } from "./order._pickup-Chk0olMu.js";
+import { r as referenceFor, t as Route } from "./order._pickup-BIufjkZy.js";
 import { a as TOPPINGS, c as loadOrder, d as CONTRACT_ADDRESS, f as Button, o as findItem, p as createLucideIcon, s as money, u as SiteHeader } from "./menu-BRPakc10.js";
 /**
 * @license lucide-react v0.575.0 - ISC
@@ -393,11 +393,16 @@ function isPotentialField(line, field) {
 //#region src/lib/streamImage.ts
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom(), 1);
-async function streamImage(endpoint, prompt, onFrame) {
+var PARTIAL_EVENTS = /* @__PURE__ */ new Set(["image_generation.partial_image", "image_edit.partial_image"]);
+var COMPLETED_EVENTS = /* @__PURE__ */ new Set(["image_generation.completed", "image_edit.completed"]);
+async function streamImage(endpoint, prompt, onFrame, reference) {
 	const res = await fetch(endpoint, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ prompt })
+		body: JSON.stringify({
+			prompt,
+			reference
+		})
 	});
 	if (!res.ok || !res.body) throw new Error(`Image generation failed: ${res.status} ${await res.text().catch(() => "")}`);
 	let sawCompleted = false;
@@ -413,10 +418,10 @@ async function streamImage(endpoint, prompt, onFrame) {
 			streamError = payload?.error?.message ?? "Image generation failed";
 			return;
 		}
-		if (event.event !== "image_generation.partial_image" && event.event !== "image_generation.completed") return;
+		if (!event.event || !PARTIAL_EVENTS.has(event.event) && !COMPLETED_EVENTS.has(event.event)) return;
 		if (!payload) return;
 		sawAnyEvent = true;
-		const isFinal = event.event === "image_generation.completed";
+		const isFinal = COMPLETED_EVENTS.has(event.event);
 		(0, import_react_dom.flushSync)(() => {
 			onFrame(`data:image/png;base64,${payload.b64_json}`, isFinal);
 		});
@@ -439,6 +444,7 @@ async function streamImage(endpoint, prompt, onFrame) {
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
 				prompt,
+				reference,
 				stream: false
 			})
 		});
@@ -522,6 +528,7 @@ function OrderPage() {
 	}, [pickup]);
 	const isLoading = data === void 0;
 	const protein = data?.protein ? findItem(data.protein) : void 0;
+	const reference = referenceFor(data?.protein);
 	const toppingList = (data?.toppings ?? []).map((id) => findItem(id)).filter((item) => Boolean(item)).sort((a, b) => TOPPINGS.findIndex((t) => t.id === a.id) - TOPPINGS.findIndex((t) => t.id === b.id));
 	const riceList = (data?.rice ?? []).map((id) => findItem(id)).filter((item) => Boolean(item));
 	const sideList = (data?.sides ?? []).map(findItem).filter(Boolean);
@@ -545,11 +552,12 @@ function OrderPage() {
 			"The tortilla must be rolled into a compact, short, wide upright wrap rather than a long horizontal burrito.",
 			"Its open top faces the camera, with the front tortilla flap folded across the lower half and lightly toasted brown spots visible.",
 			"The bottom third of the wrap is wrapped in crinkled metallic silver foil, with the foil folded neatly up around the tortilla.",
-			"A cute, realistic domestic kitten is nestled inside at the very front and center of the tortilla, about 30 percent larger than before.",
+			`A cute, realistic ${reference.breed} kitten is nestled inside at the very front and center of the tortilla, with the same breed, coat colors, and markings as the kitten in the reference image.`,
 			"The kitten must be an ordinary cat with natural fur only — no clothing, collars, bandanas, costumes, accessories, or any human-added adornments.",
 			"Show the kitten's head, chest, and two front paws resting naturally over the front rim; the cat must be the clear focal point, prominently sized, and must not be covered by food.",
 			fillings ? `Arrange these selected ingredients visibly around and just behind the kitten: ${fillings.toLowerCase()}.` : "Keep the kitten framed by the open tortilla.",
-			"Match the cheerful attached-reference style: centered symmetrical composition, compact proportions, realistic tortilla and food textures, crisp clean cutout appearance, and soft studio lighting.",
+			"Use the attached reference image as the template: keep its camera angle, centered symmetrical composition, wrap shape, foil, kitten size and pose, realistic tortilla and food textures, and soft studio lighting — only add the fillings described here.",
+			"Place everything on a plain clean white background.",
 			"Show exactly one kitten and one foil-wrapped tortilla wrap. No plate, hands, people, text, lettering, logo, watermark, extra limbs, or duplicate animal."
 		].filter(Boolean).join(" ");
 	};
@@ -563,7 +571,7 @@ function OrderPage() {
 			await streamImage("/api/generate-purrito", buildPrompt(nextMode), (dataUrl, final) => {
 				setImageSrc(dataUrl);
 				if (final) setIsFinal(true);
-			});
+			}, nextMode === "photo" ? reference.image : void 0);
 		} catch (streamFailure) {
 			const message = streamFailure instanceof Error ? streamFailure.message : "Could not create the picture";
 			setImageError(message);

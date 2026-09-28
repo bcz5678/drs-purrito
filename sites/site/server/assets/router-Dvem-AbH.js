@@ -1,7 +1,7 @@
 import { K as require_react, M as escapeHtml, Y as __toESM, o as useHydrated, r as useRouter, s as require_jsx_runtime } from "./react-dom-Dk58sb-z.js";
 import { b as createNonReactiveReadonlyStore, c as appendUniqueUserTags, d as getAssetCrossOrigin, f as getScriptPreloadAttrs, g as RouterCore, h as resolveManifestCssLink, n as Outlet, y as createNonReactiveMutableStore } from "./Match-D1CK22Zg.js";
 import { r as Link, t as Toaster$1 } from "./dist-Dgzuy_xe.js";
-import { i as createRootRouteWithContext, n as lazyRouteComponent, r as createFileRoute, t as Route$3 } from "./order._pickup-Chk0olMu.js";
+import { a as createFileRoute, i as lazyRouteComponent, n as isAllowedReference, o as createRootRouteWithContext, t as Route$3 } from "./order._pickup-BIufjkZy.js";
 //#region node_modules/@tanstack/react-router/dist/esm/routerStores.js
 var getStoreFactory = (opts) => {
 	return {
@@ -3351,23 +3351,46 @@ var Route$1 = createFileRoute("/")({
 });
 //#endregion
 //#region src/routes/api/generate-purrito.ts
+var MODEL = process.env["OPENAI_IMAGE_MODEL"] ?? "gpt-image-1";
+var QUALITY = process.env["OPENAI_IMAGE_QUALITY"] ?? "medium";
+var SIZE = "1024x1024";
 var Route = createFileRoute("/api/generate-purrito")({ server: { handlers: { POST: async ({ request }) => {
-	const { prompt, stream = true } = await request.json();
+	const { prompt, reference, stream = true } = await request.json();
 	const key = process.env["OPENAI_API_KEY"];
 	if (!key) return new Response("Missing OPENAI_API_KEY", { status: 500 });
-	const upstream = await fetch("https://api.openai.com/v1/images/generations", {
+	if (reference && !isAllowedReference(reference)) return new Response("Unknown reference image", { status: 400 });
+	const streamParams = stream ? {
+		stream: true,
+		partial_images: 2
+	} : {};
+	let upstream;
+	if (reference) {
+		const refRes = await fetch(new URL(reference, request.url));
+		if (!refRes.ok) return new Response("Could not load reference image", { status: 500 });
+		const form = new FormData();
+		form.append("image[]", await refRes.blob(), "reference.png");
+		form.append("model", MODEL);
+		form.append("prompt", prompt);
+		form.append("quality", QUALITY);
+		form.append("size", SIZE);
+		for (const [name, value] of Object.entries(streamParams)) form.append(name, String(value));
+		upstream = await fetch("https://api.openai.com/v1/images/edits", {
+			method: "POST",
+			headers: { Authorization: `Bearer ${key}` },
+			body: form
+		});
+	} else upstream = await fetch("https://api.openai.com/v1/images/generations", {
 		method: "POST",
 		headers: {
 			Authorization: `Bearer ${key}`,
 			"Content-Type": "application/json"
 		},
 		body: JSON.stringify({
-			model: "gpt-image-1",
+			model: MODEL,
 			prompt,
-			...stream ? {
-				stream: true,
-				partial_images: 2
-			} : {}
+			quality: QUALITY,
+			size: SIZE,
+			...streamParams
 		})
 	});
 	if (!upstream.ok || !upstream.body) return new Response(await upstream.text(), { status: upstream.status });
